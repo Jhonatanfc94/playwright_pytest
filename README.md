@@ -1,28 +1,41 @@
-Playwright + Pytest Automation Framework
-Project Overview
-Template for browser automation testing using Playwright and Pytest.
+# playwright_pytest
 
-Author
-👨‍💻 Jhonatan Flores
-https://img.shields.io/badge/GitHub-Profile-blue?style=flat&logo=github
+A template for automated testing projects using Playwright and Pytest.
 
-🛠️ Dependencies Installation
-Python Packages
-pip install -r packages.txt
+---
 
-Reporting Tools (Windows)
-scoop install allure
+## 📦 Dependencies
 
-� Running Tests
-Basic Execution
-# Run tests in headless mode (default)
+1. **Install Python dependencies:**
+    ```bash
+    pip install -r packages.txt
+    ```
+2. **Install Allure (for reporting) on Windows:**
+    ```bash
+    scoop install allure
+    ```
+
+---
+
+## 🚀 Usage
+
+### 1. Run Tests (with browser UI)
+```bash
 pytest --alluredir=./allure-results --browser_name chrome
+```
 
-# Run tests with visible browser
-pytest --alluredir=./allure-results --browser_name chrome --headed
-
-📊 Generating Reports
-Generate HTML report:
+### 2. Generate HTML Report
+```bash
 allure generate ./allure-results -o ./allure-report --clean
-Open the report:
+```
+
+### 3. Open the Report
+```bash
 allure open ./allure-report
+```
+
+---
+
+## 👤 Author
+
+- **Jhonatan Flores** - [@jhonatan](https://github.com/Jhonatanfc94)
