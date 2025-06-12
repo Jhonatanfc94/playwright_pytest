@@ -12,23 +12,29 @@ jobs:
       - name: Pull code
         uses: actions/checkout@v4
 
-      - name: Set up Python and Allure
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y allure
-          python -m pip install --upgrade pip
+      - name: Set up Python
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.12'
+      
+      - name: Install Allure CLI
+        run: sudo apt-get install -y allure
 
       - name: Install dependencies
         run: pip install -r packages.txt
 
       - name: Install Playwright browsers
-        run: python -m playwright install --with-deps
+        run: python -m playwright install chromium
 
       - name: Run tests
         run: pytest --alluredir=./allure-results --browser_name chrome --tracing=retain-on-failure
 
-      - name: Generate Allure report
-        run: allure generate ./allure-results --clean -o ./allure-report
+      - name: Generate Allure report  
+        uses: simple-elf/allure-report-action@v1.7  
+        if: always()  
+        with:  
+          allure_results: allure-results  
+          allure_history: allure-results 
 
       - name: Upload Allure report
         uses: actions/upload-artifact@v4
