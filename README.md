@@ -1,3 +1,6 @@
+## Autor
+- Jhonatan Flores - [@jhonatan](hhttps://github.com/Jhonatanfc94)
+
 # playwright_pytest
 Template for testing projects
 
