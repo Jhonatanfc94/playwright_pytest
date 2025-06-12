@@ -6,6 +6,13 @@ A template for automated testing projects using Playwright and Pytest.
 
 ## 📦 Dependencies
 
+- **Python 3.8+** 🐍
+- **Playwright** 🎭
+- **Pytest** 🧪
+- **Allure** 📊 (for beautiful test reports)
+- **Scoop** (for easy Windows installs) 🪟
+
+---
 1. **Install Python dependencies:**
     ```bash
     pip install -r packages.txt
@@ -47,7 +54,6 @@ allure open ./allure-report
     ```bash
    git push origin feature/your-feature-name
 6. **Open a Pull Request**
-```
 
 ---
 ## 👤 Author
