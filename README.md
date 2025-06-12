@@ -35,7 +35,19 @@ allure open ./allure-report
 ```
 
 ---
+## 🤝 Cómo contribuir
+Por favor lee [CONTRIBUTING.md](CONTRIBUTING.md) antes de hacer un PR.
 
+# Guía de Contribución
+
+1. Haz fork del proyecto
+2. Crea tu rama (`git checkout -b feature/nueva-funcionalidad`)
+3. Haz commit de tus cambios (`git commit -m 'Añade x funcionalidad'`)
+4. Haz push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+```
+
+---
 ## 👤 Author
 
 - **Jhonatan Flores** - [@jhonatan](https://github.com/Jhonatanfc94)
