@@ -17,10 +17,18 @@ jobs:
         with:  
           python-version: '3.12'
       
-      - name: Install Allure CLI
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install system dependencies
         run: sudo apt-get install -y allure
 
-      - name: Install dependencies
+      - name: Install Node.js packages (including Lighthouse)
+        run: npm install
+
+      - name: Install Python dependencies
         run: pip install -r packages.txt
 
       - name: Install Playwright browsers
@@ -34,18 +42,11 @@ jobs:
         if: always()  
         with:  
           allure_results: allure-results  
-          allure_history: allure-results 
+          allure_history: allure-results
 
       - name: Upload Allure report
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: always()
         with:
           name: allure-report
           path: allure-report/
-
-      - name: Upload Playwright traces
-        uses: actions/upload-artifact@v4
-        if: ${{ failure() }}
-        with:
-          name: playwright-traces
-          path: test-results/

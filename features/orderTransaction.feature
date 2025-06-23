@@ -1,6 +1,6 @@
 Feature: Order Transaction
   Test related to Order transactions
-
+  
   Scenario Outline: Verify Order success message shown in details page
     Given place the item order with <username> and <password>
     And the user is on landing plage

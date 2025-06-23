@@ -7,7 +7,7 @@ from poms.dashboard import DashboardPage
 from poms.login import LoginPage
 from poms.order_detail import OrderDetailPage
 from poms.orders import OrdersPage
-from utils.api_base import APIUtils
+from utils.api_testing import APIUtils
 
 with open('data/credentials.json') as f:
     test_data = json.load(f)

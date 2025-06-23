@@ -1,7 +1,7 @@
 from playwright.sync_api import Playwright, Page, expect
 import json
 import pytest
-from utils.api_base import APIUtils
+from utils.api_testing import APIUtils
 
 fakePayloadLoadResponse = {"data":[],"message":"No Orders"}
 
