@@ -1,0 +1,47 @@
+# Directorios de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Directorios y archivos de pytest
+.pytest_cache/
+allure-report/
+allure-results/
+report.html
+
+# Entornos virtuales
+venv/
+.env/
+.envrc
+
+# Archivos de Lighthouse
+lighthouse-report.json
+lighthouse-reports/
+.lighthouseci/
+
+# Archivos de Node.js
+node_modules/
+npm-debug.log*
+
+# Archivos de configuración local
+*.local
+*.log
+*.pot
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de Playwright temporales
+playwright/.cache/
+playwright/artifacts/
+
+# Archivos temporales
+*.tmp
+*.tmp.*

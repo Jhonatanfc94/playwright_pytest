@@ -70,9 +70,3 @@ A concise template for automated browser testing using **Playwright** + **Pytest
 
 ## 👤 Author
 - **Jhonatan Flores** - [@jhonatan](https://github.com/Jhonatanfc94)
-
-## Third-Party Licenses
-This project uses:
-- [Playwright](https://playwright.dev) (Apache 2.0)
-- [Allure Framework](https://docs.qameta.io/allure/) (Apache 2.0)
-- [Pytest](https://pytest.org) (MIT)

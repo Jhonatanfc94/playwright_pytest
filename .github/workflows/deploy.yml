@@ -1,0 +1,52 @@
+name: "Regression testing"
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  functional_testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pull code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.12'
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y allure
+
+      - name: Install Node.js packages (including Lighthouse)
+        run: npm install
+
+      - name: Install Python dependencies
+        run: pip install -r packages.txt
+
+      - name: Install Playwright browsers
+        run: python -m playwright install chromium
+
+      - name: Run tests
+        run: pytest --alluredir=./allure-results --browser_name chrome --tracing=retain-on-failure
+
+      - name: Generate Allure report  
+        uses: simple-elf/allure-report-action@v1.7  
+        if: always()  
+        with:  
+          allure_results: allure-results  
+          allure_history: allure-results
+
+      - name: Upload Allure report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report
+          path: allure-report/
