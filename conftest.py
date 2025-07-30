@@ -55,26 +55,6 @@ def browser_instance(playwright, request):
     context.close()
     browser.close()
 
-def pytest_configure(config):
-    config._metadata = {
-        "Proyecto": "Playwright Pytest",
-        "Tester": "Jhonatan Flores",
-        "Navegador": config.getoption("--browser_name")
-    }
-
-def pytest_collection_modifyitems(config, items):
-    browser_name = config.getoption("--browser_name")
-    only_lighthouse = config.getoption("--only-lighthouse")
-
-    if only_lighthouse:
-        selected = [item for item in items if item.get_closest_marker("lighthouse")]
-        items[:] = selected
-        return
-    
-    if not only_lighthouse and browser_name != "lighthouse":
-        remaining = [item for item in items if not item.get_closest_marker("lighthouse")]
-        items[:] = remaining
-
 @pytest.fixture(scope="function")
 def logged_in_page(browser_instance: Page, playwright: Playwright) -> Page:
     api_utils = APIUtils()
@@ -97,3 +77,23 @@ def logged_in_page(browser_instance: Page, playwright: Playwright) -> Page:
     expect(browser_instance).to_have_url("https://example.com/home", timeout=10000)
     
     yield browser_instance
+
+def pytest_configure(config):
+    config._metadata = {
+        "Proyecto": "Playwright Pytest",
+        "Tester": "Jhonatan Flores",
+        "Navegador": config.getoption("--browser_name")
+    }
+
+def pytest_collection_modifyitems(config, items):
+    browser_name = config.getoption("--browser_name")
+    only_lighthouse = config.getoption("--only-lighthouse")
+
+    if only_lighthouse:
+        selected = [item for item in items if item.get_closest_marker("lighthouse")]
+        items[:] = selected
+        return
+    
+    if not only_lighthouse and browser_name != "lighthouse":
+        remaining = [item for item in items if not item.get_closest_marker("lighthouse")]
+        items[:] = remaining
