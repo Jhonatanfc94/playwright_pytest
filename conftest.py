@@ -84,6 +84,7 @@ def pytest_configure(config):
         "Tester": "Jhonatan Flores",
         "Navegador": config.getoption("--browser_name")
     }
+    config.addinivalue_line("markers", "lighthouse: marks tests as lighthouse-related for performance auditing")
 
 def pytest_collection_modifyitems(config, items):
     browser_name = config.getoption("--browser_name")
