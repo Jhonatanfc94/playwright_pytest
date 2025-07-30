@@ -1,61 +1,30 @@
-import os
-import subprocess
 import json
 import pytest
 from playwright.sync_api import Page
-import sys
+from utils.lighthouse_utils import LighthouseRunner
 
-def run_lighthouse(page: Page) -> dict:
-    """Ejecuta Lighthouse y valida contra thresholds predefinidos"""
+URLS_TO_TEST = [
+    "https://example.com"
+]
 
-    thresholds = {
-        "performance": 0.8,
-        "accessibility": 0.9,
-        "best-practices": 0.9,
-        "seo": 0.8
-    }
+@pytest.mark.lighthouse
+@pytest.mark.parametrize("url", URLS_TO_TEST)
+def test_lighthouse_scores(page: Page, url):
+    page.goto(url)
+    runner = LighthouseRunner(page)
+    reports = runner.run_mobile_and_desktop_audits()
 
-    report_path = "lighthouse-report.json"
-    url = page.url
+    for device, report in reports.items():
+        insights = runner.generate_insights_slide(report)
+        print(f"\nInsights for {device}:\n")
+        print(insights)
+        runner.validate_thresholds(report)
 
-    # Ruta local al ejecutable de lighthouse
-    lighthouse_cmd = os.path.join("node_modules", ".bin", "lighthouse")
-    if sys.platform.startswith("win"):
-        lighthouse_cmd += ".cmd"
-
-    try:
-        subprocess.run(
-            [lighthouse_cmd, url,
-             "--output=json",
-             f"--output-path={report_path}",
-             "--chrome-flags=--headless --no-sandbox",
-             "--quiet"],
-            check=True,
-            timeout=120
-        )
-
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
-
-        for category, min_score in thresholds.items():
-            score = report["categories"][category]["score"]
-            assert score >= min_score, f"{category} score ({score:.2f}) < {min_score}"
-
-        return report
-
-    except Exception as e:
-        pytest.fail(f"Error ejecutando Lighthouse: {str(e)}")
-
-
-def test_homepage_performance(page: Page):
-    page.goto("https://example.com")  # Cambia a tu URL real
-    report = run_lighthouse(page)
-    
-    # Opcional: Adjuntar reporte a Allure
     if hasattr(pytest, "allure"):
         import allure
-        allure.attach(
-            json.dumps(report, indent=2),
-            name="Lighthouse Report",
-            attachment_type=allure.attachment_type.JSON
-        )
+        for device, report in reports.items():
+            allure.attach(
+                json.dumps(report, indent=2),
+                name=f"Lighthouse Report ({device}) - {url}",
+                attachment_type=allure.attachment_type.JSON
+            )

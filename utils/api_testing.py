@@ -1,25 +1,19 @@
 from playwright.sync_api import Playwright
-ordersPayLoad = {"orders": [{"country": "Chile", "productOrderedId": "67a8df1ac0d3e6622a297ccb"}]}
 
 class APIUtils:
-    def getToken(self, playwright:Playwright, user_credentials):
-
-        api_request_context = playwright.request.new_context(base_url="https://rahulshettyacademy.com/")
-        response = api_request_context.post("api/ecom/auth/login",
-                                            data={"userEmail":user_credentials['userEmail'],
-                                                     "userPassword":user_credentials['userPassword']})
-        assert response.ok
-        print(response.json())
-        responseBody = response.json()
-        return responseBody["token"]
-
-    def createOrder(self, playwright:Playwright, user_credentials):
-        token=self.getToken(playwright, user_credentials)
-        api_request_context = playwright.request.new_context(base_url="https://rahulshettyacademy.com/")
-        response = api_request_context.post("api/ecom/order/create-order",
-                                 data= ordersPayLoad,
-                                 headers={"Authorization":token,
-                                          "Content-Type":"application/json"})
+    def __init__(self, base_url="https://algo/api"):
+        self.base_url = base_url
+    
+    def getToken(self, playwright:Playwright, email=None, password=None):
+        api_request_context = playwright.request.new_context(base_url="https://algo/api/")
+        payload = {
+            "email": email if email else "emailexample@gmail.com",
+            "password": password if password else "passwordExample"
+        }
+    
+        response = api_request_context.post("api/auth/login",
+                                            data=payload)
+        
+        assert response.ok, f"Login failed with status {response.status_code}: {response.text}"
         response_body = response.json()
-        orderID = response_body["orders"][0]
-        return orderID
+        return response_body["data"]

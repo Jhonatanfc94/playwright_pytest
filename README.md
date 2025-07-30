@@ -35,10 +35,13 @@ A concise template for automated browser testing using **Playwright** + **Pytest
 - **Run tests with browser UI:**
   ```bash
   pytest --alluredir=./allure-results --browser_name chrome
+  pytest --alluredir=./allure-results --browser_name device
+  pytest .\tests\name_test.py --browser_name chrome --headed 
   ```
 - **Generate HTML report:**
   ```bash
   allure generate ./allure-results -o ./allure-report --clean
+  allure generate ./allure-results -o ./allure-report
   ```
 - **Open the report:**
   ```bash
@@ -46,12 +49,13 @@ A concise template for automated browser testing using **Playwright** + **Pytest
   ```
 - **Performance testing with Locust:**
   ```bash
-   locust -f tests/performance/locustfile.py --host=#yoururl
+   locust -f .\tests\performance\locustfile.py --headless --run-time 40m --csv=resultados 
    ```
 - **Performance testing with lighthouse:**
   ```bash
-   pytest tests/performance/ -v
+   pytest --alluredir=./allure-results --only-lighthouse -s
    ``
+   
 ---
 
 ## 🤝 Contributing
