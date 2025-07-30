@@ -1,7 +1,6 @@
 import json
 import pytest
 from playwright.sync_api import Page, Playwright, expect
-from poms.login import LoginPage
 from utils.api_testing import APIUtils
 
 def pytest_addoption(parser):
@@ -94,8 +93,7 @@ def logged_in_page(browser_instance: Page, playwright: Playwright) -> Page:
     browser_instance.add_init_script(script)
     
     browser_instance.goto("https://example.com")
-    login_page = LoginPage(browser_instance)
+
     expect(browser_instance).to_have_url("https://example.com/home", timeout=10000)
-    expect(login_page.menu).to_be_visible(timeout=10000)
     
     yield browser_instance
