@@ -21,7 +21,6 @@ def user_credentials(request):
 @pytest.fixture()
 def browser_instance(playwright, request):
     browser_name = request.config.getoption("browser_name")
-    only_lighthouse = request.config.getoption("--only-lighthouse")
 
     browser = None
     context = None
@@ -80,7 +79,7 @@ def logged_in_page(browser_instance: Page, playwright: Playwright) -> Page:
 
 def pytest_configure(config):
     config._metadata = {
-        "Proyecto": "Playwright Pytest",
+        "Proyecto": "Automation framework",
         "Tester": "Jhonatan Flores",
         "Navegador": config.getoption("--browser_name")
     }

@@ -1,26 +1,21 @@
 {
-  "name": "playwright_pytest",
+  "name": "automation",
   "version": "1.0.0",
-  "description": "A concise template for automated browser testing using **Playwright** + **Pytest** with Allure reporting.",
+  "description": "It's a test automation framework unified",
   "main": "index.js",
   "directories": {
     "test": "tests"
-  },
-  "devDependencies": {
-    "lighthouse": "^12.6.1"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Jhonatanfc94/playwright_pytest.git"
+    "url": "https://github.com/Jhonatanfc94/"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Jhonatan Flores Cardenas",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Jhonatanfc94/playwright_pytest/issues"
-  },
-  "homepage": "https://github.com/Jhonatanfc94/playwright_pytest#readme"
+  "dependencies": {
+    "lighthouse": "^12.8.1"
+  }
 }

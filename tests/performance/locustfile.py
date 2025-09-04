@@ -2,7 +2,7 @@ from locust import HttpUser, task, between, LoadTestShape
 
 class CayalaVisitor(HttpUser):
     wait_time = between(2, 5)
-    host = "https://example.com"
+    host = "https://www.petwiseworld.org"
 
     def on_start(self):
         self.headers = {
@@ -13,31 +13,29 @@ class CayalaVisitor(HttpUser):
     @task(10)
     def visit_homepage(self):
         with self.client.get("/", headers=self.headers, catch_response=True) as response:
-            if "text expected" not in response.text:
-                response.failure("The title isn't displayed correctly")
+            if "PetWise" not in response.text:
+                response.failure(f"The title isn't displayed correctly. Response text:\n{response.text[:500]}")
             if response.status_code != 200:
-                    response.failure(f"page not available")
+                response.failure(f"Status code: {response.status_code}")
             if response.elapsed.total_seconds() > 2.5:
                 response.failure("Time response is > 2.5s")
 
     @task(8)
     def explore_sections(self):
         sections = [
-            "/home"
+            "/register"
         ]
         for section in sections:
             with self.client.get(section, headers=self.headers, name="/[sección]", catch_response=True) as response:
-                if "text expected" not in response.text:
-                    response.failure("The title isn't displayed correctly")
-                if response.status_code != 200:
-                    response.failure(f"Sección {section} no disponible")
+                if "Registrarse" not in response.text:
+                    response.failure(f"The title isn't displayed correctly. Response text:\n{response.text[:500]}")
                 if response.elapsed.total_seconds() > 2.5:
                     response.failure("Time response is > 2.5s")
 
 class DailyTrafficShape(LoadTestShape):
     stages = [
-        {"duration": 180, "users": 15, "spawn_rate": 1},
-        {"duration": 900, "users": 15, "spawn_rate": 5},
+        {"duration": 60, "users": 5, "spawn_rate": 1},
+        {"duration": 120, "users": 10, "spawn_rate": 5},
     ]
 
     def tick(self):

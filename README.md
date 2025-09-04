@@ -5,8 +5,8 @@ A concise template for automated browser testing using **Playwright** + **Pytest
 ---
 
 ## 📦 Requirements
-- Python 3.8+
-- Node.js 16+ (for Lighthouse)
+- Python
+- Node.js (for Lighthouse)
 - Playwright
 - Pytest
 - Allure (for reports)
@@ -15,6 +15,8 @@ A concise template for automated browser testing using **Playwright** + **Pytest
 ---
 
 ## ⚡️ Quick Start
+
+python -m playwright install
 
 1. **Install dependencies:**
    ```bash
@@ -26,7 +28,7 @@ A concise template for automated browser testing using **Playwright** + **Pytest
    ```
 2. **Install Lighthouse globally:**
    ```bash
-   npm install -g lighthouse
+   npm install lighthouse
    ```
 ---
 
@@ -55,22 +57,6 @@ A concise template for automated browser testing using **Playwright** + **Pytest
   ```bash
    pytest --alluredir=./allure-results --only-lighthouse -s
    ``
-   
----
-
-## 🤝 Contributing
-1. Fork this repo
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/your-feature
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m 'Add: your message'
-   ```
-4. Push and open a Pull Request
-
----
 
 ## 👤 Author
 - **Jhonatan Flores** - [@jhonatan](https://github.com/Jhonatanfc94)
