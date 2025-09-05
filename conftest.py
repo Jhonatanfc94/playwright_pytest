@@ -30,18 +30,18 @@ def browser_instance(playwright, request):
         return
 
     if browser_name == "chrome":
-        browser = playwright.chromium.launch(headless=False)
+        browser = playwright.chromium.launch(headless=True)
         context = browser.new_context(
             viewport={ 'width': 1366 , 'height': 768 }
         )
     elif browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=False)
+        browser = playwright.firefox.launch(headless=True)
         context = browser.new_context(
             viewport={ 'width': 1366 , 'height': 768 }
         )
     elif browser_name == "device":
         device = playwright.devices['iPhone 13']
-        browser = playwright.webkit.launch(headless=False)
+        browser = playwright.webkit.launch(headless=True)
         context = browser.new_context(
             **device,
         )
