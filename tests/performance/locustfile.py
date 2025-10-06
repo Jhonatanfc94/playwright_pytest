@@ -1,5 +1,5 @@
 import logging
-from locust import HttpUser, task, between, LoadTestShape
+from locust import HttpUser, task, between, LoadTestShape, events
 
 # Configura el logging
 logging.basicConfig(level=logging.INFO)
@@ -9,56 +9,65 @@ class CayalaVisitor(HttpUser):
     host = "https://cba.ucb.edu.bo/"
 
     def on_start(self):
-        """Se ejecuta una vez por usuario virtual al inicio."""
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept-Language": "es-ES,es;q=0.9", # Cambiado a español de España, más común
+            "Accept-Language": "es-ES,es;q=0.9",
         }
 
     @task(10)
     def visit_homepage(self):
-        """Visita la página principal y valida el contenido."""
         with self.client.get("/", headers=self.headers, catch_response=True, name="/") as response:
-            logging.info(f"Visitando homepage: {response.status_code}")
-            
-            # Validación del código de estado
-            if response.status_code != 200:
-                response.failure(f"El código de estado no es 200, fue: {response.status_code}")
-                return # Detiene la ejecución de esta tarea si el estado no es 200
+            if not response.ok:
+                response.failure(f"FALLO DE CONEXIÓN: Código de estado {response.status_code}")
+                return
 
-            # Validación de contenido real
+            # FALLO FUNCIONAL: El contenido es incorrecto. Esto es un bug.
             expected_title = "Universidad Católica Boliviana"
             if expected_title not in response.text:
-                response.failure(f"El texto '{expected_title}' no se encontró en la página principal.")
+                response.failure(f"FALLO DE CONTENIDO: El texto '{expected_title}' no se encontró.")
             
-            # Validación de tiempo de respuesta
-            if response.elapsed.total_seconds() > 5:
-                response.failure(f"El tiempo de respuesta fue mayor a 5s: {response.elapsed.total_seconds()}s")
+            # NOTA: Ya no marcamos la lentitud como un fallo aquí.
 
     @task(8)
     def explore_sections(self):
-        """Explora secciones clave y valida su contenido."""
-        sections = [
-            "/oferta-pregrado/",
-            # Puedes agregar más secciones aquí para hacer la prueba más realista
-            # "/vida-universitaria/",
-            # "/admisiones/",
-        ]
-        for section in sections:
-            with self.client.get(section, headers=self.headers, name="/[seccion]", catch_response=True) as response:
-                logging.info(f"Visitando sección {section}: {response.status_code}")
-                
-                if response.status_code != 200:
-                    response.failure(f"El código de estado para {section} no es 200, fue: {response.status_code}")
-                    continue # Salta a la siguiente sección si esta falla
+        with self.client.get("/oferta-pregrado/", headers=self.headers, name="/[seccion]", catch_response=True) as response:
+            if not response.ok:
+                response.failure(f"FALLO DE CONEXIÓN: Código de estado {response.status_code}")
+                return
 
-                # Validación de contenido real para la sección
-                expected_text = "Oferta Pregrado"
-                if expected_text not in response.text:
-                    response.failure(f"El texto '{expected_text}' no se encontró en la sección {section}.")
-                
-                if response.elapsed.total_seconds() > 5:
-                    response.failure(f"El tiempo de respuesta para {section} fue mayor a 5s: {response.elapsed.total_seconds()}s")
+            # FALLO FUNCIONAL: El contenido es incorrecto.
+            expected_text = "Oferta Pregrado"
+            if expected_text not in response.text:
+                response.failure(f"FALLO DE CONTENIDO: El texto '{expected_text}' no se encontró.")
+
+# --- HOOK FINAL BASADO 100% EN LA DOCUMENTACIÓN OFICIAL ---
+@events.test_stop.add_listener
+def on_test_stop(environment, **kwargs):
+    """
+    Se ejecuta al final de la prueba para verificar todos nuestros criterios de éxito
+    usando únicamente las estadísticas integradas de Locust.
+    """
+    logging.info("--- INICIANDO VERIFICACIÓN DE CRITERIOS DE ÉXITO ---")
+    
+    # Criterio 1: Tasa de fallos funcionales (Tolerancia Cero)
+    # environment.stats.total.fail_ratio solo cuenta los response.failure() que definimos.
+    if environment.stats.total.fail_ratio > 0.0:
+        logging.error(f"Prueba fallida: La tasa de fallos de contenido/conexión fue de {environment.stats.total.fail_ratio:.2%}, se requiere tolerancia cero.")
+        environment.process_exit_code = 1
+        return
+
+    # Criterio 2: Rendimiento (Percentil 95 > 5 segundos)
+    # Esto significa: "fallar si el 5% de las peticiones más lentas superaron los 5000ms".
+    p95_response_time = environment.stats.total.get_response_time_percentile(0.95)
+    logging.info(f"Reporte de SLO: Percentil 95 del tiempo de respuesta = {p95_response_time:.2f} ms")
+    if p95_response_time > 5000:
+        logging.error(f"Prueba fallida: El percentil 95 ({p95_response_time:.2f} ms) superó el umbral de 5000 ms.")
+        environment.process_exit_code = 1
+        return
+
+    # Si llegamos aquí, todos los criterios pasaron
+    logging.info("Prueba exitosa: Todos los criterios de rendimiento y funcionales se cumplieron.")
+    environment.process_exit_code = 0
 
 class DailyTrafficShape(LoadTestShape):
     """

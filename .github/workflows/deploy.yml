@@ -69,15 +69,12 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r packages.txt
 
-      - name: Run Locust performance test with 5% failure threshold
+      - name: Run Locust performance test
         run: |
           locust -f tests/performance/locustfile.py \
           --headless \
           --csv=locust-results \
-          --html=locust-report.html \
-          # --- Criterio de Aceptación Funcional ---
-          # Falla si la tasa de errores (definidos por response.failure) es > 5%
-          --check-fail-ratio 0.05
+          --html=locust-report.html
 
       - name: Upload Locust results
         uses: actions/upload-artifact@v4
