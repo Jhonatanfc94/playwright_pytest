@@ -1,41 +1,74 @@
+import logging
 from locust import HttpUser, task, between, LoadTestShape
 
+# Configura el logging
+logging.basicConfig(level=logging.INFO)
+
 class CayalaVisitor(HttpUser):
-    wait_time = between(2, 5)
-    host = "https://www.petwiseworld.org"
+    wait_time = between(5, 10)
+    host = "https://cba.ucb.edu.bo/"
 
     def on_start(self):
+        """Se ejecuta una vez por usuario virtual al inicio."""
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept-Language": "es-GT,es;q=0.9",
+            "Accept-Language": "es-ES,es;q=0.9", # Cambiado a español de España, más común
         }
 
     @task(10)
     def visit_homepage(self):
-        with self.client.get("/", headers=self.headers, catch_response=True) as response:
-            if "PetWise" not in response.text:
-                response.failure(f"The title isn't displayed correctly. Response text:\n{response.text[:500]}")
+        """Visita la página principal y valida el contenido."""
+        with self.client.get("/", headers=self.headers, catch_response=True, name="/") as response:
+            logging.info(f"Visitando homepage: {response.status_code}")
+            
+            # Validación del código de estado
             if response.status_code != 200:
-                response.failure(f"Status code: {response.status_code}")
-            if response.elapsed.total_seconds() > 2.5:
-                response.failure("Time response is > 2.5s")
+                response.failure(f"El código de estado no es 200, fue: {response.status_code}")
+                return # Detiene la ejecución de esta tarea si el estado no es 200
+
+            # Validación de contenido real
+            expected_title = "Universidad Católica Boliviana"
+            if expected_title not in response.text:
+                response.failure(f"El texto '{expected_title}' no se encontró en la página principal.")
+            
+            # Validación de tiempo de respuesta
+            if response.elapsed.total_seconds() > 5:
+                response.failure(f"El tiempo de respuesta fue mayor a 5s: {response.elapsed.total_seconds()}s")
 
     @task(8)
     def explore_sections(self):
+        """Explora secciones clave y valida su contenido."""
         sections = [
-            "/register"
+            "/oferta-pregrado/",
+            # Puedes agregar más secciones aquí para hacer la prueba más realista
+            # "/vida-universitaria/",
+            # "/admisiones/",
         ]
         for section in sections:
-            with self.client.get(section, headers=self.headers, name="/[sección]", catch_response=True) as response:
-                if "Registrarse" not in response.text:
-                    response.failure(f"The title isn't displayed correctly. Response text:\n{response.text[:500]}")
-                if response.elapsed.total_seconds() > 2.5:
-                    response.failure("Time response is > 2.5s")
+            with self.client.get(section, headers=self.headers, name="/[seccion]", catch_response=True) as response:
+                logging.info(f"Visitando sección {section}: {response.status_code}")
+                
+                if response.status_code != 200:
+                    response.failure(f"El código de estado para {section} no es 200, fue: {response.status_code}")
+                    continue # Salta a la siguiente sección si esta falla
+
+                # Validación de contenido real para la sección
+                expected_text = "Oferta Pregrado"
+                if expected_text not in response.text:
+                    response.failure(f"El texto '{expected_text}' no se encontró en la sección {section}.")
+                
+                if response.elapsed.total_seconds() > 5:
+                    response.failure(f"El tiempo de respuesta para {section} fue mayor a 5s: {response.elapsed.total_seconds()}s")
 
 class DailyTrafficShape(LoadTestShape):
+    """
+    Define una forma de carga personalizada que simula un patrón de tráfico.
+    Stage 1: 1 minuto con 1 usuario para calentar.
+    Stage 2: 2 minutos con 3 usuarios para simular una carga ligera.
+    """
     stages = [
-        {"duration": 60, "users": 5, "spawn_rate": 1},
-        {"duration": 120, "users": 10, "spawn_rate": 5},
+        {"duration": 60, "users": 1, "spawn_rate": 1},
+        {"duration": 120, "users": 3, "spawn_rate": 5},
     ]
 
     def tick(self):

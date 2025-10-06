@@ -1,47 +1,83 @@
-# Directorios de caché de Python
-__pycache__/
-*.py[cod]
-*$py.class
+# =============================================================================
+# Archivos y Reportes de Pruebas (Locust, Allure, Pytest, Lighthouse)
+# =============================================================================
+# Reportes de Locust (CSV y HTML)
+resultados_*.csv
+locust-report.html
+locust-results*
 
-# Directorios y archivos de pytest
-.pytest_cache/
+# Reportes de Allure
 allure-report/
 allure-results/
-report.html
 
-# Entornos virtuales
-venv/
-.env/
-.envrc
-
-# Archivos de Lighthouse
+# Reportes de Lighthouse
 lighthouse-report.json
 lighthouse-reports/
 .lighthouseci/
 
-# Archivos de Node.js
+# Caché de Pytest
+.pytest_cache/
+
+# Otros reportes genéricos
+report.html
+
+
+# =============================================================================
+# Entornos Virtuales y Dependencias
+# =============================================================================
+# Entornos de Python
+venv/
+.venv/
+.env/
+.envrc
+
+# Dependencias de Node.js
 node_modules/
-npm-debug.log*
 
-# Archivos de configuración local
-*.local
-*.log
-*.pot
 
-# Archivos de IDE
+# =============================================================================
+# Archivos Específicos de Python
+# =============================================================================
+# Caché y archivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# =============================================================================
+# Configuración de IDEs y Editores
+# =============================================================================
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Archivos de sistema
-.DS_Store
-Thumbs.db
 
-# Archivos de Playwright temporales
+# =============================================================================
+# Archivos Específicos de Playwright
+# =============================================================================
+# Caché y artefactos generados (trazas, videos, etc.)
 playwright/.cache/
 playwright/artifacts/
 
-# Archivos temporales
+
+# =============================================================================
+# Archivos Generados por el Sistema Operativo
+# =============================================================================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+
+# =============================================================================
+# Logs y Archivos Temporales
+# =============================================================================
+*.log
+npm-debug.log*
 *.tmp
 *.tmp.*
+*.local
+*.pot
+

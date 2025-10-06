@@ -3,6 +3,7 @@
 A concise template for automated browser testing using **Playwright** + **Pytest** with Allure reporting.
 
 ---
+venv\Scripts\activate
 
 ## 📦 Requirements
 - Python

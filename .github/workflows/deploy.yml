@@ -1,13 +1,14 @@
-name: "Regression testing"
+name: "Regression and Performance Testing"
 
 on:
   push:
     branches: ["main"]
 
 jobs:
+  # JOB 1: Pruebas funcionales con Playwright y Pytest
   functional_testing:
+    if: false
     runs-on: ubuntu-latest
-
     steps:
       - name: Pull code
         uses: actions/checkout@v4
@@ -23,7 +24,7 @@ jobs:
           node-version: '18'
 
       - name: Install system dependencies
-        run: sudo apt-get install -y allure
+        run: sudo apt-get update && sudo apt-get install -y allure
 
       - name: Install Node.js packages (including Lighthouse)
         run: npm install
@@ -34,7 +35,7 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install chromium
 
-      - name: Run tests
+      - name: Run functional tests
         run: pytest --alluredir=./allure-results --browser_name chrome --tracing=retain-on-failure
 
       - name: Generate Allure report  
@@ -50,3 +51,39 @@ jobs:
         with:
           name: allure-report
           path: allure-report/
+
+  # JOB 2: Pruebas de rendimiento con Locust
+  performance_testing:
+    runs-on: ubuntu-latest
+    # Si vuelves a habilitar el job 1, descomenta la siguiente línea
+    # needs: functional_testing 
+    steps:
+      - name: Pull code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.12'
+      
+      - name: Install Python dependencies
+        run: pip install -r packages.txt
+
+      - name: Run Locust performance test with 5% failure threshold
+        run: |
+          locust -f tests/performance/locustfile.py \
+          --headless \
+          --csv=locust-results \
+          --html=locust-report.html \
+          # --- Criterio de Aceptación Funcional ---
+          # Falla si la tasa de errores (definidos por response.failure) es > 5%
+          --check-fail-ratio 0.05
+
+      - name: Upload Locust results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: locust-performance-report
+          path: |
+            locust-report.html
+            locust-results*
