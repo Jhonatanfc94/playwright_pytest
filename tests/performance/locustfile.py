@@ -60,7 +60,7 @@ def on_test_stop(environment, **kwargs):
     # Esto significa: "fallar si el 5% de las peticiones más lentas superaron los 5000ms".
     p95_response_time = environment.stats.total.get_response_time_percentile(0.95)
     logging.info(f"Reporte de SLO: Percentil 95 del tiempo de respuesta = {p95_response_time:.2f} ms")
-    if p95_response_time > 800:
+    if p95_response_time > 200:
         logging.error(f"Prueba fallida: El percentil 95 ({p95_response_time:.2f} ms) superó el umbral de 5000 ms.")
         environment.process_exit_code = 1
         return
