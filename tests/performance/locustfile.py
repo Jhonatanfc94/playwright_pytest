@@ -16,6 +16,7 @@ class CayalaVisitor(HttpUser):
 
     @task(10)
     def visit_homepage(self):
+        with self.client.get("/", headers=self.headers, catch_response=True, name="/") as response:
             if not response.ok:
                 response.failure(f"FALLO DE CONEXIÓN: Código de estado {response.status_code}")
                 return
