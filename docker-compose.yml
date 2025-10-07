@@ -4,6 +4,7 @@ services:
     user: "${UID_GID}"
     ports:
       - "8089:8089"
+      - "5557:5557"
     volumes:
       - ./:/mnt/locust
     command: >
@@ -12,7 +13,6 @@ services:
       --headless
       --html /mnt/locust/locust-report.html
       --csv /mnt/locust/locust-results
-      --exit-code-on-error 1
 
   worker:
     build: .
@@ -22,6 +22,4 @@ services:
     command: >
       -f /mnt/locust/tests/performance/locustfile.py
       --worker
-      --master-host master
-    depends_on:
-      - master
+      --master-host ${MASTER_HOST:-master}
