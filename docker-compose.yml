@@ -1,6 +1,7 @@
 services:
   master:
     build: .
+    user: "${UID_GID}"
     ports:
       - "8089:8089"
     volumes:
@@ -15,6 +16,7 @@ services:
 
   worker:
     build: .
+    user: "${UID_GID}"
     volumes:
       - ./:/mnt/locust
     command: >

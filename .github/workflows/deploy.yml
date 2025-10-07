@@ -95,6 +95,7 @@ jobs:
 
       - name: Run Locust performance test with Docker Compose
         run: |
+          export UID_GID=$(id -u):$(id -g)
           docker compose up \
             --build \
             --scale worker=3 \
