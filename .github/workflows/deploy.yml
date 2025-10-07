@@ -53,7 +53,8 @@ jobs:
           path: allure-report/
 
   # JOB 2: Pruebas de rendimiento con Locust
-  performance_testing:
+  performance_testing_local:
+    if: false
     runs-on: ubuntu-latest
     # Si vuelves a habilitar el job 1, descomenta la siguiente línea
     # needs: functional_testing 
@@ -75,6 +76,30 @@ jobs:
           --headless \
           --csv=locust-results \
           --html=locust-report.html
+
+      - name: Upload Locust results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: locust-performance-report
+          path: |
+            locust-report.html
+            locust-results*
+
+  # JOB 2: Pruebas de rendimiento con Locust
+  performance_testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull code
+        uses: actions/checkout@v4
+
+      - name: Run Locust performance test with Docker Compose
+        run: |
+          docker-compose up \
+            --build \
+            --scale worker=3 \
+            --abort-on-container-exit \
+            --exit-code-from master
 
       - name: Upload Locust results
         uses: actions/upload-artifact@v4

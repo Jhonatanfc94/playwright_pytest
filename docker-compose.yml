@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  master:
+    build: .  # Construye la imagen usando el Dockerfile en el directorio actual
+    ports:
+      - "8089:8089" # Expone la UI web de Locust (opcional para headless, pero buena práctica)
+    volumes:
+      - ./:/mnt/locust # Monta el directorio actual para que el contenedor vea tus archivos
+    command: >
+      -f /mnt/locust/tests/performance/locustfile.py
+      --master
+      --headless
+      --html /mnt/locust/locust-report.html
+      --csv /mnt/locust/locust-results
+      --exit-code-on-error 1 # CRÍTICO: Hace que el contenedor falle si la prueba falla según tus hooks
+
+  worker:
+    build: . # Usa la misma imagen personalizada que el maestro
+    volumes:
+      - ./:/mnt/locust
+    command: >
+      -f /mnt/locust/tests/performance/locustfile.py
+      --worker
+      --master-host master # Se conecta al servicio 'master'
+    depends_on:
+      - master
