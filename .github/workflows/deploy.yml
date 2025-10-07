@@ -95,7 +95,7 @@ jobs:
 
       - name: Run Locust performance test with Docker Compose
         run: |
-          docker-compose up \
+          docker compose up \
             --build \
             --scale worker=3 \
             --abort-on-container-exit \
