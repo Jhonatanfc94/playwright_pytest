@@ -4,7 +4,7 @@ from playwright.sync_api import Page
 from utils.lighthouse_utils import LighthouseRunner
 
 URLS_TO_TEST = [
-    "https://www.petwiseworld.org/#/"
+    "http://localhost:4200/login"
 ]
 
 @pytest.mark.lighthouse

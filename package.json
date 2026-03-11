@@ -16,6 +16,6 @@
   "author": "Jhonatan Flores Cardenas",
   "license": "ISC",
   "dependencies": {
-    "lighthouse": "^12.8.1"
+    "lighthouse": "^12.8.2"
   }
 }

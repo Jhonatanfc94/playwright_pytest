@@ -2,6 +2,7 @@
 
 A concise template for automated browser testing using **Playwright** + **Pytest** with Allure reporting.
 
+python -m venv .venv
 ---
 venv\Scripts\activate
 
@@ -52,7 +53,7 @@ python -m playwright install
   ```
 - **Performance testing with Locust:**
   ```bash
-   locust -f .\tests\performance\locustfile.py --headless --run-time 40m --csv=resultados 
+   locust -f .\tests\performance\locustfile.py --headless --run-time 3m --csv=resultados --html reporte-locust.html
    ```
 - **Performance testing with lighthouse:**
   ```bash

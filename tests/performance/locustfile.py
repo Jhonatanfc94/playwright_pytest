@@ -1,83 +1,103 @@
+import uuid
 import logging
-from locust import HttpUser, task, between, LoadTestShape, events
+from locust import HttpUser, SequentialTaskSet, task, between, LoadTestShape, events
 
 # Configura el logging
 logging.basicConfig(level=logging.INFO)
 
-class CayalaVisitor(HttpUser):
-    wait_time = between(5, 10)
-    host = "https://cba.ucb.edu.bo/"
-
+class UserLifecycleBehavior(SequentialTaskSet):
+    """
+    Define el comportamiento secuencial de un usuario virtual.
+    Fase 1: Registro -> Fase 2: Login -> Fase 3: Eliminar -> Fin.
+    """
     def on_start(self):
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept-Language": "es-ES,es;q=0.9",
-        }
+        # Se ejecuta cuando el usuario virtual "nace".
+        self.username = f"locust_user_{uuid.uuid4().hex[:8]}"
+        self.password = "LoadTestPass123!"
+        self.headers = {"Content-Type": "application/json"}
 
-    @task(10)
-    def visit_homepage(self):
-        with self.client.get("/", headers=self.headers, catch_response=True, name="/") as response:
-            if not response.ok:
-                response.failure(f"FALLO DE CONEXIÓN: Código de estado {response.status_code}")
-                return
+    @task
+    def phase_1_register(self):
+        payload = {"username": self.username, "password": self.password}
+        with self.client.post("/register", json=payload, headers=self.headers, catch_response=True, name="/register") as response:
+            if response.status_code == 201:
+                response.success()
+            else:
+                response.failure(f"Fallo en Registro: Código {response.status_code} - {response.text}")
 
-            # FALLO FUNCIONAL: El contenido es incorrecto. Esto es un bug.
-            expected_title = "Universidad Católica Boliviana"
-            if expected_title not in response.text:
-                response.failure(f"FALLO DE CONTENIDO: El texto '{expected_title}' no se encontró.")
-            
-            # NOTA: Ya no marcamos la lentitud como un fallo aquí.
+    @task
+    def phase_2_login(self):
+        payload = {"username": self.username, "password": self.password}
+        with self.client.post("/login", json=payload, headers=self.headers, catch_response=True, name="/login") as response:
+            if response.status_code == 200:
+                response.success()
+            elif response.status_code == 401:
+                response.failure("Credenciales incorrectas al intentar login.")
+            else:
+                response.failure(f"Fallo en Login: Código {response.status_code} - {response.text}")
 
-    @task(8)
-    def explore_sections(self):
-        with self.client.get("/oferta-pregrado/", headers=self.headers, name="/[seccion]", catch_response=True) as response:
-            if not response.ok:
-                response.failure(f"FALLO DE CONEXIÓN: Código de estado {response.status_code}")
-                return
+    @task
+    def phase_3_delete(self):
+        with self.client.delete(f"/user/{self.username}", catch_response=True, name="/user/[username]") as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Fallo al Eliminar: Código {response.status_code} - {response.text}")
 
-            # FALLO FUNCIONAL: El contenido es incorrecto.
-            expected_text = "Oferta Pregrado"
-            if expected_text not in response.text:
-                response.failure(f"FALLO DE CONTENIDO: El texto '{expected_text}' no se encontró.")
+    @task
+    def finish_lifecycle(self):
+        # Detiene la secuencia actual para este usuario, permitiendo que nazca uno nuevo.
+        self.interrupt()
 
-# --- HOOK FINAL BASADO 100% EN LA DOCUMENTACIÓN OFICIAL ---
+class ApiLoadTester(HttpUser):
+    # Asignamos el comportamiento secuencial
+    tasks = [UserLifecycleBehavior]
+    
+    # Tiempo de espera entre peticiones (ajustado de 1 a 3 segundos para fluidez de API)
+    # Puedes regresarlo a between(5, 10) si prefieres simular un usuario más lento
+    wait_time = between(1, 3) 
+    
+    # URL de tu backend Flask
+    host = "http://localhost:5000"
+
+# --- HOOK FINAL BASADO EN TUS CRITERIOS ---
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
     """
-    Se ejecuta al final de la prueba para verificar todos nuestros criterios de éxito
-    usando únicamente las estadísticas integradas de Locust.
+    Verifica los criterios de éxito usando las estadísticas de Locust.
     """
     logging.info("--- INICIANDO VERIFICACIÓN DE CRITERIOS DE ÉXITO ---")
     
-    # Criterio 1: Tasa de fallos funcionales (Tolerancia Cero)
-    # environment.stats.total.fail_ratio solo cuenta los response.failure() que definimos.
+    # Criterio 1: Tasa de fallos (Tolerancia Cero)
     if environment.stats.total.fail_ratio > 0.0:
-        logging.error(f"Prueba fallida: La tasa de fallos de contenido/conexión fue de {environment.stats.total.fail_ratio:.2%}, se requiere tolerancia cero.")
+        logging.error(f"Prueba fallida: La tasa de fallos fue de {environment.stats.total.fail_ratio:.2%}, se requiere tolerancia cero.")
         environment.process_exit_code = 1
         return
 
-    # Criterio 2: Rendimiento (Percentil 95 > 5 segundos)
-    # Esto significa: "fallar si el 5% de las peticiones más lentas superaron los 5000ms".
+    # Criterio 2: Rendimiento (Percentil 95 > 200 ms)
     p95_response_time = environment.stats.total.get_response_time_percentile(0.95)
     logging.info(f"Reporte de SLO: Percentil 95 del tiempo de respuesta = {p95_response_time:.2f} ms")
+    
+    # Nota: 200ms para una API local en Flask suele cumplirse, pero si falla, 
+    # es porque la encriptación de bcrypt (que agregamos) consume CPU intencionalmente.
     if p95_response_time > 200:
-        logging.error(f"Prueba fallida: El percentil 95 ({p95_response_time:.2f} ms) superó el umbral de 5000 ms.")
+        logging.error(f"Prueba fallida: El percentil 95 ({p95_response_time:.2f} ms) superó el umbral de 200 ms.")
         environment.process_exit_code = 1
         return
 
-    # Si llegamos aquí, todos los criterios pasaron
     logging.info("Prueba exitosa: Todos los criterios de rendimiento y funcionales se cumplieron.")
     environment.process_exit_code = 0
 
+# --- TU SIMULADOR DE TRÁFICO (LOAD SHAPE) ---
 class DailyTrafficShape(LoadTestShape):
     """
-    Define una forma de carga personalizada que simula un patrón de tráfico.
-    Stage 1: 1 minuto con 1 usuario para calentar.
-    Stage 2: 2 minutos con 3 usuarios para simular una carga ligera.
+    Demo de concurrencia y cuello de botella en I/O.
+    Stage 1: Comportamiento ideal (1 usuario). Todo fluye.
+    Stage 2: Tráfico concurrente (20 usuarios de golpe). El archivo .txt colapsa.
     """
     stages = [
-        {"duration": 60, "users": 1, "spawn_rate": 1},
-        {"duration": 120, "users": 3, "spawn_rate": 5},
+        {"duration": 30, "users": 1, "spawn_rate": 1},   # Etapa 1: Paz y tranquilidad
+        {"duration": 60, "users": 20, "spawn_rate": 10}, # Etapa 2: Caos controlado
     ]
 
     def tick(self):

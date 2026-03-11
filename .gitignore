@@ -5,6 +5,7 @@
 resultados_*.csv
 locust-report.html
 locust-results*
+reporte-locust.html
 
 # Reportes de Allure
 allure-report/
@@ -12,6 +13,8 @@ allure-results/
 
 # Reportes de Lighthouse
 lighthouse-report.json
+lighthouse-report-desktop.json
+lighthouse-report-mobile.json
 lighthouse-reports/
 .lighthouseci/
 
