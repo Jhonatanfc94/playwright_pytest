@@ -7,7 +7,6 @@ on:
 jobs:
   # JOB 1: Pruebas funcionales con Playwright y Pytest
   functional_testing:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Pull code
@@ -36,7 +35,20 @@ jobs:
         run: python -m playwright install chromium
 
       - name: Run functional tests
-        run: pytest --alluredir=./allure-results --browser_name chrome --tracing=retain-on-failure
+        run: pytest
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          HEADLESS: "true"
+
+      - name: Run Lighthouse performance tests
+        run: pytest tests/performance/test_lighthouse.py --only-lighthouse
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          HEADLESS: "true"
 
       - name: Generate Allure report  
         uses: simple-elf/allure-report-action@v1.7  
@@ -52,12 +64,18 @@ jobs:
           name: allure-report
           path: allure-report/
 
-  # JOB 2: Pruebas de rendimiento con Locust
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots
+          path: screenshots/
+
+  # JOB 2: Pruebas de rendimiento con Locust (Local — sin Docker)
   performance_testing_local:
-    if: false
+    if: true  # Habilitado
     runs-on: ubuntu-latest
-    # Si vuelves a habilitar el job 1, descomenta la siguiente línea
-    # needs: functional_testing 
+    # needs: functional_testing  # Descomentar para ejecutar después de functional
     steps:
       - name: Pull code
         uses: actions/checkout@v4
@@ -74,6 +92,9 @@ jobs:
         run: |
           locust -f tests/performance/locustfile.py \
           --headless \
+          --users 10 \
+          --spawn-rate 2 \
+          --host ${{ secrets.BASE_URL || 'https://example.com' }} \
           --csv=locust-results \
           --html=locust-report.html
 
@@ -86,8 +107,9 @@ jobs:
             locust-report.html
             locust-results*
 
-  # JOB 2: Pruebas de rendimiento con Locust
-  performance_testing:
+  # JOB 3: Pruebas de rendimiento con Locust (Docker Compose — escalable)
+  performance_testing_docker:
+    if: false  # Habilitar cuando se configure Docker Compose
     runs-on: ubuntu-latest
     steps:
       - name: Pull code
@@ -106,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: locust-performance-report
+          name: locust-docker-report
           path: |
             locust-report.html
             locust-results*

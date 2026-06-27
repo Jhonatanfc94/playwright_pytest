@@ -11,8 +11,8 @@ services:
       -f /mnt/locust/tests/performance/locustfile.py
       --master
       --headless
-      --html /mnt/locust/locust-report.html
-      --csv /mnt/locust/locust-results
+      --html /mnt/locust/report.html
+      --csv /mnt/locust/results
 
   worker:
     build: .

@@ -6,6 +6,7 @@ resultados_*.csv
 locust-report.html
 locust-results*
 reporte-locust.html
+report.html
 
 # Reportes de Allure
 allure-report/
@@ -21,9 +22,6 @@ lighthouse-reports/
 # Caché de Pytest
 .pytest_cache/
 
-# Otros reportes genéricos
-report.html
-
 
 # =============================================================================
 # Entornos Virtuales y Dependencias
@@ -31,11 +29,13 @@ report.html
 # Entornos de Python
 venv/
 .venv/
-.env/
-.envrc
+test_venv/
 
 # Dependencias de Node.js
 node_modules/
+
+# Variables de entorno (NUNCA commitear el .env real)
+.env
 
 
 # =============================================================================
@@ -45,6 +45,23 @@ node_modules/
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 
 # =============================================================================
@@ -60,6 +77,9 @@ __pycache__/
 # Archivos Específicos de Playwright
 # =============================================================================
 # Caché y artefactos generados (trazas, videos, etc.)
+test-results/
+playwright-report/
+blob-report/
 playwright/.cache/
 playwright/artifacts/
 
@@ -83,3 +103,7 @@ npm-debug.log*
 *.tmp.*
 *.local
 *.pot
+diff.txt
+
+# Screenshots de fallo (generados por screenshot_utils.py)
+screenshots/

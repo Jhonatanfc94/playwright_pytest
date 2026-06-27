@@ -1,8 +1,8 @@
-# Usa la imagen oficial de Locust como base
+# Use the official Locust image as base
 FROM locustio/locust
 
-# Copia tu archivo de requerimientos al contenedor
+# COPY requirement packages to the container
 COPY packages.txt /
 
-# Instala las dependencias definidas en packages.txt
+# Install dependencies defined in packages.txt
 RUN pip install -r /packages.txt

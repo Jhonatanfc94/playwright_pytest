@@ -18,6 +18,7 @@ class LighthouseRunner:
 
     def run_audit(self, report_path: str = "lighthouse-report.json", mobile: bool = False) -> dict:
         url = self.page.url
+        # Path to lighthouse CLI
         lighthouse_cmd = os.path.join("node_modules", ".bin", "lighthouse")
         
         if sys.platform.startswith("win"):
@@ -28,16 +29,21 @@ class LighthouseRunner:
             device_suffix = "mobile" if mobile else "desktop"
             device_report_path = f"{base_name}-{device_suffix}{ext}"
             
-            subprocess.run(
+            result = subprocess.run(
                 [lighthouse_cmd, url,
                  "--output=json",
                  f"--output-path={device_report_path}",
                  "--chrome-flags=--headless --no-sandbox",
                  "--quiet",
                  "--emulated-form-factor=mobile" if mobile else "--emulated-form-factor=desktop"],
-                check=True,
-                timeout=120
+                check=False,
+                timeout=120,
+                capture_output=True,
+                text=True
             )
+            
+            if not os.path.exists(device_report_path):
+                raise RuntimeError(f"Lighthouse falló y no generó reporte. Salida: {result.stderr}")
             
             with open(device_report_path, encoding="utf-8") as f:
                 report = json.load(f)
@@ -46,7 +52,7 @@ class LighthouseRunner:
             return report
                 
         except Exception as e:
-            raise RuntimeError(f"Error ejecutando Lighthouse: {str(e)}")
+            raise RuntimeError(f"Error executing Lighthouse: {str(e)}")
 
     def _print_report(self, report: dict, mobile: bool):
         device = "Mobile" if mobile else "Desktop"
@@ -73,15 +79,48 @@ class LighthouseRunner:
         desktop_report = self.run_audit(report_path, mobile=False)
         return {"mobile": mobile_report, "desktop": desktop_report}
 
-    def _format_kb(self, bytes: int) -> str:
-        return f"{round(bytes / 1024, 1)}KB" if bytes else "0KB"
+    # ==========================================
+    # 📊 ANÁLISIS DE OPORTUNIDADES
+    # ==========================================
+
+    def _format_kb(self, bytes_val: int) -> str:
+        """Formatea bytes a KB legible."""
+        return f"{round(bytes_val / 1024, 1)}KB" if bytes_val else "0KB"
 
     def _format_ms(self, ms: float) -> str:
+        """Formatea milisegundos a formato legible."""
         if ms > 1000:
             return f"{round(ms / 1000, 1)}s"
         return f"{round(ms, 1)}ms"
-    
+
+    def _shorten_url(self, url: str) -> str:
+        """Acorta URLs largas para mejor visualización."""
+        return url.split('/')[-1][:30] + ('...' if len(url) > 30 else '')
+
+    def _get_impact_level(self, value: float, metric: str) -> str:
+        """Clasifica el nivel de impacto de una oportunidad."""
+        thresholds = {
+            "bytes": {"high": 500*1024, "medium": 100*1024},
+            "ms": {"high": 1000, "medium": 300}
+        }
+        if value > thresholds[metric]["high"]:
+            return "high"
+        elif value > thresholds[metric]["medium"]:
+            return "medium"
+        return "low"
+
     def extract_optimization_opportunities(self, report: dict) -> dict:
+        """Extrae y categoriza oportunidades de optimización del reporte.
+
+        Analiza las auditorías de Lighthouse para identificar mejoras en:
+        - Imágenes (formatos modernos, compresión)
+        - Recursos bloqueantes (CSS/JS que retrasan renderizado)
+        - Código no utilizado (JavaScript muerto)
+        - SEO (meta descripciones, etc.)
+
+        Returns:
+            dict: Oportunidades categorizadas por impacto.
+        """
         opportunities = {
             "high_impact": [],
             "blocking_resources": [],
@@ -94,7 +133,6 @@ class LighthouseRunner:
 
         audits = report["audits"]
         
-        # Helper para añadir items con formato consistente
         def add_opportunity(category, title, details, impact, reference=None):
             entry = {
                 "title": title,
@@ -112,8 +150,8 @@ class LighthouseRunner:
                 impact = self._get_impact_level(savings, "bytes")
                 add_opportunity(
                     "high_impact",
-                    "Convertir a WebP/AVIF",
-                    f"Ahorro potencial: {self._format_kb(savings)}",
+                    "Convert to WebP/AVIF",
+                    f"Potential savings: {self._format_kb(savings)}",
                     impact,
                     "https://web.dev/uses-webp-images/"
                 )
@@ -125,8 +163,8 @@ class LighthouseRunner:
                 impact = self._get_impact_level(savings, "bytes")
                 add_opportunity(
                     "high_impact",
-                    "Optimizar compresión de imágenes",
-                    f"Ahorro potencial: {self._format_kb(savings)}",
+                    "Optimize image compression",
+                    f"Potential savings: {self._format_kb(savings)}",
                     impact,
                     "https://web.dev/uses-optimized-images/"
                 )
@@ -135,14 +173,14 @@ class LighthouseRunner:
         if "render-blocking-resources" in audits:
             opp = audits["render-blocking-resources"]
             items = opp.get("details", {}).get("items", [])
-            for item in items[:3]:  # Limitar a los 3 principales
+            for item in items[:3]:
                 savings = item.get("wastedMs", 0)
                 if savings > 0:
                     impact = self._get_impact_level(savings, "ms")
                     add_opportunity(
                         "blocking_resources",
-                        f"Recurso bloqueante: {self._shorten_url(item.get('url', ''))}",
-                        f"Tiempo ahorrable: {self._format_ms(savings)}",
+                        f"Blocking resource: {self._shorten_url(item.get('url', ''))}",
+                        f"Time savings: {self._format_ms(savings)}",
                         impact,
                         "https://web.dev/render-blocking-resources/"
                     )
@@ -155,8 +193,8 @@ class LighthouseRunner:
                 impact = self._get_impact_level(savings, "bytes")
                 add_opportunity(
                     "code_issues",
-                    "JavaScript no utilizado",
-                    f"Ahorro potencial: {self._format_kb(savings)}",
+                    "Unused JavaScript",
+                    f"Potential savings: {self._format_kb(savings)}",
                     impact,
                     "https://web.dev/unused-javascript/"
                 )
@@ -167,78 +205,67 @@ class LighthouseRunner:
             if opp.get("score", 1) < 1:
                 add_opportunity(
                     "seo_opportunities",
-                    "Meta descripción faltante",
-                    "Mejora potencial en posicionamiento SEO",
+                    "Missing meta description",
+                    "Potential SEO positioning improvement",
                     "medium",
                     "https://web.dev/meta-description/"
                 )
 
         return opportunities
 
-    def _get_impact_level(self, value: float, metric: str) -> str:
-        thresholds = {
-            "bytes": {"high": 500*1024, "medium": 100*1024},
-            "ms": {"high": 1000, "medium": 300}
-        }
-        if value > thresholds[metric]["high"]:
-            return "high"
-        elif value > thresholds[metric]["medium"]:
-            return "medium"
-        return "low"
+    def generate_insights_report(self, report: dict) -> str:
+        """Genera un reporte formateado de insights de optimización.
 
-    def _shorten_url(self, url: str) -> str:
-        """Acorta URLs largas para mejor visualización"""
-        return url.split('/')[-1][:30] + ('...' if len(url) > 30 else '')
-
-    def generate_insights_slide(self, report: dict) -> str:
+        Returns:
+            str: Reporte en formato Markdown con emojis de impacto.
+        """
         opportunities = self.extract_optimization_opportunities(report)
         
-        # Emojis para cada nivel de impacto
         impact_emojis = {
             "high": "🔥",
             "medium": "⚠️",
             "low": "🔹"
         }
         
-        slide = "# Lighthouse Insights\n\n"
+        output = "# Lighthouse Insights\n\n"
         
-        # Sección de alto impacto
+        # High impact section
         if opportunities["high_impact"]:
-            slide += "## 🔥 Optimización Crítica (Alto Impacto)\n"
-            for opp in sorted(opportunities["high_impact"], 
+            output += "## 🔥 Critical Optimization (High Impact)\n"
+            for opp in sorted(opportunities["high_impact"],
                              key=lambda x: x["impact"], reverse=True):
                 emoji = impact_emojis.get(opp["impact"], "🔹")
-                slide += f"- **{opp['title']}**  \n"
-                slide += f"  - {opp['details']} {emoji} {opp['impact'].capitalize()}\n"
+                output += f"- **{opp['title']}**\n"
+                output += f"  - {opp['details']} {emoji} {opp['impact'].capitalize()}\n"
                 if opp["reference"]:
-                    slide += f"  - ▶️ {opp['reference']}\n"
-            slide += "\n"
+                    output += f"  - ▶️ {opp['reference']}\n"
+            output += "\n"
         
-        # Recursos bloqueantes
+        # Blocking resources
         if opportunities["blocking_resources"]:
-            slide += "## ⏱️ Recursos Bloqueantes\n"
+            output += "## ⏱️ Blocking Resources\n"
             for opp in opportunities["blocking_resources"]:
                 emoji = impact_emojis.get(opp["impact"], "🔹")
-                slide += f"- **{opp['title']}**  \n"
-                slide += f"  - {opp['details']} {emoji}\n"
+                output += f"- **{opp['title']}**\n"
+                output += f"  - {opp['details']} {emoji}\n"
                 if opp["reference"]:
-                    slide += f"  - ▶️ {opp['reference']}\n"
-            slide += "\n"
+                    output += f"  - ▶️ {opp['reference']}\n"
+            output += "\n"
         
-        # Otras recomendaciones
+        # Other recommendations
         if opportunities["code_issues"] or opportunities["seo_opportunities"]:
-            slide += "## 🛠️ Otras Recomendaciones\n"
+            output += "## 🛠️ Other Recommendations\n"
             
             for opp in opportunities["code_issues"]:
-                slide += f"- **{opp['title']}**  \n"
-                slide += f"  - {opp['details']}\n"
+                output += f"- **{opp['title']}**\n"
+                output += f"  - {opp['details']}\n"
                 if opp["reference"]:
-                    slide += f"  - ▶️ {opp['reference']}\n"
+                    output += f"  - ▶️ {opp['reference']}\n"
             
             for opp in opportunities["seo_opportunities"]:
-                slide += f"- **{opp['title']}**  \n"
-                slide += f"  - {opp['details']}\n"
+                output += f"- **{opp['title']}**\n"
+                output += f"  - {opp['details']}\n"
                 if opp["reference"]:
-                    slide += f"  - ▶️ {opp['reference']}\n"
+                    output += f"  - ▶️ {opp['reference']}\n"
         
-        return slide
+        return output

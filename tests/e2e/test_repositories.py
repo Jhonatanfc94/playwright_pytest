@@ -1,31 +1,40 @@
+import os
 import pytest
-from playwright.sync_api import expect
 from pytest_bdd import scenarios, given, when, then, parsers
+from playwright.sync_api import Page, expect
+
 from poms.repository import RepositoryPage
 
-scenarios('../features/repository_scenario.feature')
+BASE_URL = os.getenv("BASE_URL", "https://github.com/Jhonatanfc94")
+
+scenarios('../../features/repository_scenario.feature')
+
 
 @pytest.fixture
 def shared_data():
+    """Diccionario para compartir datos entre steps (regla pytest-bdd.md #2)."""
     return {}
+
 
 @given(parsers.parse('the user is on the {page_name} page'), target_fixture="browser_instance")
 def navigate_to_page(browser_instance, shared_data, page_name):
     browser_instance.goto(page_name)
     repository_page = RepositoryPage(browser_instance)
+    repository_page.verify_page_loaded()
     shared_data['repository_page'] = repository_page
+
 
 @given('the user click on the tab repositories')
 def click_repositories_tab(shared_data):
     repository_page: RepositoryPage = shared_data['repository_page']
-    repository_page.repositories_tab.click()
-    expect(repository_page.search_input).to_be_visible()
+    repository_page.click_repositories_tab()
+
 
 @when(parsers.parse('the user search {project}'))
 def search_project(shared_data, project):
     repository_page: RepositoryPage = shared_data['repository_page']
-    repository_page.search_input.fill(project)
-    repository_page.search_input.press("Enter")
+    repository_page.search_repository(project)
+
 
 @then(parsers.parse('link to the {project} is shown in results'))
 def verify_project_in_results(shared_data, project):
