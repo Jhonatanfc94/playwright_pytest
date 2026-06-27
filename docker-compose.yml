@@ -11,6 +11,8 @@ services:
       -f /mnt/locust/tests/performance/locustfile.py
       --master
       --headless
+      --expect-workers 3
+      --host ${LOCUST_HOST:-http://example.com}
       --html /mnt/locust/locust-report.html
       --csv /mnt/locust/locust-results
 
