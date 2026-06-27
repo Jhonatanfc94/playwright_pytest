@@ -51,11 +51,8 @@ jobs:
           HEADLESS: "true"
 
       - name: Generate Allure report  
-        uses: simple-elf/allure-report-action@v1.7  
-        if: always()  
-        with:  
-          allure_results: allure-results  
-          allure_history: allure-results
+        run: allure generate allure-results -o allure-report --clean
+        if: always()
 
       - name: Upload Allure report
         uses: actions/upload-artifact@v4
