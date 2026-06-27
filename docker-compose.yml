@@ -7,12 +7,13 @@ services:
       - "5557:5557"
     volumes:
       - ./:/mnt/locust
+    environment:
+      - LOCUST_EXPECT_WORKERS=${WORKERS:-1}
+      - LOCUST_HOST=${LOCUST_HOST:-http://example.com}
     command: >
       -f /mnt/locust/tests/performance/locustfile.py
       --master
       --headless
-      --expect-workers 3
-      --host ${LOCUST_HOST:-http://example.com}
       --html /mnt/locust/locust-report.html
       --csv /mnt/locust/locust-results
 

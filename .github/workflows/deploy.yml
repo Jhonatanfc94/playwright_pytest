@@ -79,11 +79,12 @@ jobs:
       - name: Run Locust performance test with Docker Compose
         env:
           LOCUST_HOST: ${{ secrets.BASE_URL }}
+          WORKERS: 3
         run: |
           export UID_GID=$(id -u):$(id -g)
           docker compose up \
             --build \
-            --scale worker=3 \
+            --scale worker=$WORKERS \
             --abort-on-container-exit \
             --exit-code-from master
 
