@@ -1,35 +1,30 @@
----
-trigger: always_on
----
+# Jerarquía de Selectores por Tipo de Aplicación
 
-# Rules for Page Object Model (POM) with Playwright Sync
+## Apps HTML Estándar (GitHub, SPAs, sitios web normales)
 
-When editing or creating files in the `poms/` directory, you must strictly follow these conventions:
+| Prioridad | Método | Ejemplo | Resiliencia |
+|---|---|---|---|
+| 1️⃣ | `get_by_role()` | `page.get_by_role("button", name="Sign in")` | ⭐⭐⭐⭐⭐ |
+| 2️⃣ | `get_by_text()` / `get_by_label()` | `page.get_by_text("Repositories")` | ⭐⭐⭐⭐ |
+| 3️⃣ | `get_by_placeholder()` | `page.get_by_placeholder("Search...")` | ⭐⭐⭐⭐ |
+| 4️⃣ | `get_by_test_id()` | `page.get_by_test_id("repo-list")` | ⭐⭐⭐ |
+| 5️⃣ | `locator("[data-*]")` | `page.locator("[data-tab-item='repos']")` | ⭐⭐⭐ |
+| 6️⃣ | CSS selector | `page.locator("nav .search-input")` | ⭐⭐ |
 
-## 1. Fundamentos
+**PROHIBIDO** usar XPath como primera opción.
 
-1. Always use the Playwright synchronous API (`playwright.sync_api`).
-2. The `__init__` constructor must receive and store the `Page` instance.
-3. POMs can optionally inherit from `BasePage` (`poms/base_page.py`).
-4. Assertions within the POM must use `expect` from `playwright.sync_api` or `assert`.
+## Apps SPA con Testing Interno (acceso al código)
 
-## 2. Selectores — Dependen del Tipo de App
+Cuando se tiene acceso al código fuente, la prioridad cambia porque se pueden **inyectar** atributos:
 
-### Apps HTML Estándar (GitHub, SPAs, etc.):
-- Definir locators en `__init__` usando `get_by_role`, `get_by_text`, `locator`.
-- Ver `poms/repository.py` como referencia.
+| Prioridad | Método | Cuándo |
+|---|---|---|
+| 1️⃣ | `get_by_test_id()` | Si el equipo inyecta `data-testid` en componentes |
+| 2️⃣ | `get_by_role()` | Siempre disponible si hay HTML semántico |
+| 3️⃣ | `get_by_label()` | Para formularios con `<label>` |
+| 4️⃣ | `locator("[data-*]")` | Atributos custom del framework |
 
-### Flutter Web con semántica:
-- Solo definir locators de `<input>` y `<flt-semantics>` con aria-label en `__init__`.
-- **NO** definir locators de botones (no existen como HTML).
-
-### Flutter Web SIN semántica (WASM/Skia):
-- **NO** definir NINGÚN locator de texto o botones en `__init__` — no existen en el DOM.
-- Solo definir locators de `<input>` (los únicos elementos HTML reales).
-- Las interacciones DEBEN usar: coordenadas viewport (`page.mouse.click(x, y)`) o teclado (`Tab` + `Enter`).
-- Las validaciones DEBEN basarse en: URL (`page.wait_for_url()`), network (`page.wait_for_load_state("networkidle")`), y screenshots.
-
-## 3. 🚫 Regla Anti-Falsos Positivos (MÁXIMA PRIORIDAD)
+## Regla Anti-Falsos Positivos (aplica a TODOS los tipos)
 
 **PROHIBIDO ABSOLUTAMENTE** envolver interacciones en `try/except` que silencien errores:
 
@@ -59,18 +54,7 @@ def click_login(self):
     self.page.wait_for_url(re.compile(r".*emailOTP.*"), timeout=15000)
 ```
 
-## 4. Cada Acción DEBE tener una Validación
-
-Toda función del POM que realice una acción **DEBE** verificar que tuvo efecto:
-
-| Acción | Validación Recomendada |
-|---|---|
-| Click en botón de navegación | `page.wait_for_url(patron)` |
-| Submit de formulario | `page.wait_for_url(patron)` o verificar nuevo elemento |
-| Fill de campo | Verificar valor con `input_value()` si es posible |
-| Login exitoso | `page.wait_for_url(patron_dashboard)` + `page.wait_for_load_state("networkidle")` |
-
-### Patrón de cascada con validación entre intentos
+## Patrón de Cascada con Validación
 
 Cuando hay múltiples estrategias de interacción, validar después de cada una:
 
@@ -101,10 +85,7 @@ def click_continue(self):
     self.page.wait_for_url(re.compile(r".*dashBoard.*"), timeout=30000)
 ```
 
-## 5. Waits — Usar Playwright, no time.sleep()
-
-- **PROHIBIDO** `time.sleep()`. Usar `page.wait_for_timeout(ms)` si se necesita una espera fija.
-- Preferir esperas inteligentes sobre esperas fijas:
+## Waits — Prioridad
 
 | Prioridad | Método | Cuándo usar |
 |---|---|---|
@@ -113,22 +94,11 @@ def click_continue(self):
 | 3️⃣ | `page.wait_for_selector(sel, state="attached")` | Esperar elemento específico |
 | 4️⃣ | `page.wait_for_timeout(ms)` | Solo cuando Flutter necesita tiempo extra para renderizar |
 
-- Si se usa `page.wait_for_timeout()`, documentar POR QUÉ es necesario.
-
-## 6. Documentación de Locators No Obvios
-
-Cuando un locator use coordenadas, keyboard shortcuts, o técnicas no estándar, **DEBE** documentar:
-- POR QUÉ no se puede usar un selector semántico.
-- CÓMO se calcularon las coordenadas (ej: "65% del viewport height").
-- QUÉ tipo de aplicación es (Flutter WASM/Skia, CanvasKit, React, etc.).
-
-## 7. Manejo de Listas y Paginación
-
-Antes de asumir que un elemento no existe en una lista o grid, verifica el comportamiento de carga:
+## Manejo de Listas y Paginación
 
 | Comportamiento | Estrategia |
 |---|---|
-| **Infinite Scroll** | Hacer scroll explícitamente (`page.evaluate("window.scrollTo(0, document.body.scrollHeight)")`) y esperar la red antes de asertar |
+| **Infinite Scroll** | Hacer scroll explícitamente y esperar la red antes de asertar |
 | **Paginación** | Interactuar con botones de paginación / "Load More" antes de buscar elementos |
 | **Lazy Loading** | Usar `page.wait_for_load_state("networkidle")` después de scroll |
 
@@ -146,3 +116,10 @@ def get_all_items(self):
         previous_count = current_count
     return current_count
 ```
+
+## Documentación de Locators No Obvios
+
+Cuando un locator use coordenadas, keyboard shortcuts, o técnicas no estándar, **DEBE** documentar:
+- POR QUÉ no se puede usar un selector semántico.
+- CÓMO se calcularon las coordenadas (ej: "65% del viewport height").
+- QUÉ tipo de aplicación es (Flutter WASM/Skia, CanvasKit, React, etc.).
